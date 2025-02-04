@@ -2,12 +2,10 @@ Package: BRAINscape
 Type: Package
 Title: Shiny GUI for eQTL, GWAS, and DESeq2 Results in MU-BRAIN Dataset
 Version: 0.1.0
-Author: Vivek Ruhela
-Authors@R: c( person("Vivek", "Ruhela", email = "vr2592@cumc.columbia.edu",
-                  role = c("aut", "cre")),
-              person("Giuseppe", "Tosto", role = "aut"),     
-              person("Basilio Cieza", "Huaman", role = "ctb"),
-              person("Zikun", "Yang", role = "ctb" )
+Authors@R: c( person("Vivek", "Ruhela", email = "vr2592@cumc.columbia.edu", role = c("aut", "cre")),
+              person("Giuseppe", "Tosto", role = "aut", email = "gt2260@cumc.columbia.edu"),     
+              person("Basilio Cieza", "Huaman", role = "ctb", email = "bc3045@cumc.columbia.edu"),
+              person("Zikun", "Yang", role = "ctb")
    )
 Maintainer: Vivek Ruhela <vr2592@cumc.columbia.edu>
 Description: An R package to visualize eQTL, GWAS, and DESeq2 analysis results through an interactive Shiny app for Hispanics and Non-Hispanics White (NHW) in MU-BRAINS.
