@@ -1,1 +1,75 @@
-# BRAINscape
+# BRAINscape: A Comprehensive Multi-Omics Analysis Tool
+
+## Overview
+**BRAINscape** is an R package designed for integrative multi-omics analysis, specifically developed for the **MU-BRAIN dataset** from multiethnic transcriptome project. The package facilitates stratified **eQTL mapping**, **GWAS**, and **Differential Expression Analysis**, providing a user-friendly framework for researchers to explore genetic and transcriptomic associations.
+
+## Features
+- **eQTL Analysis**: Supports **cis** and **trans** eQTL mapping.
+- **GWAS Analysis**: Conducts genome-wide association studies with interactive visualizations.
+- **Differential Expression Analysis**: Uses **DESeq2** for robust transcriptomic profiling.
+- **Interactive Data Exploration**: Shiny-based web interface for **data visualization**.
+- **Supports Ethnicity-Specific Analysis**: Users can filter results by **Hispanic** and **Non-Hispanic** groups.
+- **Advanced Visualization**:
+  - **Manhattan Plots** for eQTL/GWAS results.
+  - **Volcano Plots** for Differential Expression Analysis.
+  - **QQ Plots** for GWAS data distribution.
+
+## Installation
+To install **BRAINscape**, first down the source file from zenodo and then install using the following command:
+
+```r
+install.packages("BRAINscape_0.1.0.tar.gz", repo=NULL, type="source")
+```
+
+## Usage
+To launch the interactive **BRAINscape** Shiny application:
+
+```r
+library(BRAINscape)
+launch_BRAINscape()
+```
+
+## Example Workflow
+### 1. Load and Explore eQTL Data
+```r
+Select Ethinicity : Hispanics or Non-Hispanics Whites (NHW)
+Select Analysis Type: eQTL
+Select eQTL Type: cis or trans
+Adjust Nominal P-value Threshold
+```
+
+### 2. Load and Explore Differential Expression Analysis Results
+```r
+Select Ethinicity : Hispanics or Non-Hispanics Whites (NHW)
+Select Analysis Type: Differential Gene Expression
+Adjust Cutoff for p-adjusted, BaseMean, and Lof2FoldChange)
+```
+
+### 3. Load and Explore GWAS Analysis Results
+```r
+Select Ethinicity : Hispanics or Non-Hispanics Whites (NHW)
+Select Analysis Type: GWAS
+```
+
+## Data Sources
+- The **BRAINscape** package does not include raw data due to data sharing constraints.
+
+## Citation
+If you use **BRAINscape** in your research, please cite:
+> Yang, Z., Cieza, B., Reyes-Dumeyer, D., Lee, A., Ma, Y., Yilmaz, E., Lantigua, R., Miller, G.W., Brown, L.M., Honig, L. and Ciener, B., 2024. MU-BRAIN: MUltiethnic Brain Rna-seq for Alzheimer INitiative. bioRxiv, pp.2024-02.
+
+## Contributing
+We welcome contributions! To contribute:
+1. Fork the repository.
+2. Make improvements.
+3. Submit a pull request.
+
+## Support
+For issues and feature requests, please open a ticket on **GitHub Issues**.
+
+## License
+This package is licensed under the **MIT License**. See `LICENSE` for details.
+
+---
+**BRAINscape: Unlocking the Genetics of the Brain.**
+
