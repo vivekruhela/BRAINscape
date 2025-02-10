@@ -15,7 +15,7 @@
   - **QQ Plots** for GWAS data distribution.
 
 ## Installation
-To install **BRAINscape**, first down the source file from zenodo and then install using the following command:
+To install **BRAINscape**, first down the source file from [zenodo](https://zenodo.org/records/14803947) and then install using the following command:
 
 ```r
 install.packages("BRAINscape_0.1.0.tar.gz", repo=NULL, type="source")
