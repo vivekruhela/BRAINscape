@@ -27,7 +27,7 @@ To launch BRAINscape Shiny application:
 
 ```r
 library(BRAINscape)
-launch_BRAINscape()
+BRAINscape::launchApp()
 ```
 
 ## Example Workflow
