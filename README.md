@@ -15,10 +15,11 @@
   - **QQ Plots** for GWAS data distribution.
 
 ## Installation
-To install BRAINscape, first download the source file from [zenodo](https://zenodo.org/records/14803947) and then install it using the following command:
+1. Install the dependencies: shiny, ggplot2, CMplot, dplyr
+2. To install BRAINscape, first download the source file from [zenodo](https://zenodo.org/records/14803947) and then install it using the following command:
 
 ```r
-install.packages("BRAINscape_0.1.0.tar.gz", repo=NULL, type="source")
+install.packages("BRAINscape_0.1.1.tar.gz", repo=NULL, type="source")
 ```
 
 ## Usage
