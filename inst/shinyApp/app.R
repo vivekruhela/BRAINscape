@@ -3,12 +3,7 @@ suppressPackageStartupMessages({
   
   library(shiny)
   library(ggplot2)
-  library(ComplexHeatmap)
-  library(DT)
-  library(DESeq2)
-  library(circlize)
   library(dplyr)
-  library(pheatmap)  # For heatmap visualization
   library(CMplot)
   
 })
@@ -17,9 +12,8 @@ rm(list = ls())
 gc()
 
 # Load functions
-# source(system.file("R/load_data.R", package = "BRAINscape"))
-source("/mnt/vast/hpc/homes/vr2592/BRAIN/data_analysis/BRAINscape/R/load_data.R")
-package_extdata_path <- paste("/mnt/vast/hpc/homes/vr2592/BRAIN/data_analysis/BRAINscape", "inst", "extdata", sep = "/")
+package_extdata_path <- paste(system.file(package = "BRAINscape"), "inst", "extdata", sep = "/")
+source(paste(system.file(package = "BRAINscape"), "R", "load_data.R", sep = "/"))
 
 ui <- fluidPage(
   titlePanel("Analysis Viewer"),
@@ -33,7 +27,7 @@ ui <- fluidPage(
       conditionalPanel(
         condition = "input.analysisType == 'eQTL'",
         radioButtons("eqtlType", "Select eQTL Type:", choices = c("cis", "trans")),
-        selectInput("gene", "Select Gene (eQTL):", choices = NULL),
+        selectizeInput("gene", "Select Gene (eQTL):", choices = NULL, multiple = FALSE),
         sliderInput("pval_nominal", "Nominal P-Value Threshold:", min = 0, max = 1, value = 0.05, step = 0.01),
         actionButton("filterBtn", "Apply Filter")
       ),
@@ -49,8 +43,8 @@ ui <- fluidPage(
     mainPanel(
       tabsetPanel(
         tabPanel("Summary Table", DTOutput("summaryTable")),
-        tabPanel("QQ Plot", plotOutput("qqPlot")),
         tabPanel("Manhattan Plot", plotOutput("manhattanPlot")),
+        tabPanel("QQ Plot", plotOutput("qqPlot")),
         tabPanel("Volcano Plot", plotOutput("volcanoPlot"))
       )
     )
@@ -108,7 +102,7 @@ server <- function(input, output, session) {
     req(input$analysisType == "Differential Expression Analysis")
     load_samples(package_extdata_path, input$ethnicity)
   })
-    
+  
   # Observing and updating gene dropdown for eQTL analysis
   observe({
     if (input$analysisType == "eQTL") {
@@ -117,9 +111,9 @@ server <- function(input, output, session) {
         filter(pval < input$pval_nominal) %>%
         pull(gene) %>%
         unique()
-      updateSelectInput(session, "gene", choices = filtered_genes)
+      updateSelectizeInput(session, "gene", choices = filtered_genes, server = TRUE)
     } else {
-      updateSelectInput(session, "gene", choices = NULL)
+      updateSelectizeInput(session, "gene", choices = NULL, server = TRUE)
     }
   })
   
@@ -142,7 +136,6 @@ server <- function(input, output, session) {
     datatable(filtered_data())
   })
   
-  
   # Volcano Plot
   output$volcanoPlot <- renderPlot({
     req(input$analysisType == "Differential Expression Analysis", filtered_data())
@@ -157,12 +150,13 @@ server <- function(input, output, session) {
       # Updated colors for UP, DOWN, and NO genes
       scale_color_manual(values = c("DOWN" = "#00AFBB", "UP" = "#bb0c00"), 
                          labels = c("Downregulated",  "Upregulated")) + 
-      coord_cartesian(ylim = c(0, 15), xlim = c(-8, 8)) + 
+      coord_cartesian(ylim = c(0, 15), xlim = c(-2, 2)) + 
       labs(color = 'Expression Status', # Updated legend title
            x = expression("log"[2]*"FC"), y = expression("-log"[10]*"p-value")) +
-      scale_x_continuous(breaks = seq(-8, 8, 2)) + 
+      scale_x_continuous(breaks = seq(-2, 2, 0.5)) + 
       ggtitle(paste0('Volcano Plot for ', input$ethnicity, ' ethnicity')) +
-      geom_text_repel(max.overlaps = Inf, size = 5)
+      geom_text_repel(max.overlaps = 20, size = 5, box.padding = 0.5, max.time = 3) +  # Improve readability +
+      theme_minimal(base_size = 14)  # Better font clarity
     }, height = 700, width = 700)
   
   
@@ -261,69 +255,69 @@ server <- function(input, output, session) {
              highlight.col = "red")
       
       
-      # 
-      # # Combine plots using gridExtra
-      # gridExtra::grid.arrange(manhattan_plot, qq_plot(), nrow = 2)
     }
   })
+  
   
   output$qqPlot <- renderPlot({
     req(filtered_data())
     
     if (input$analysisType == "GWAS") {
-      # Step 1: Start processing
-      output$qqPlotMessage <- renderUI({
-        HTML("<b>Step 1:</b> Estimating chi distribution for the provided data...")
-      })
-      Sys.sleep(0.5) # Simulate some processing delay
       
-      # Step 2: Estimate chi distribution
-      chi <- qchisq(1 - filtered_data()$`p-value`, 1)
-      df <- data.frame(chi)
-      
-      # Step 3: Calculate lambda
-      output$qqPlotMessage <- renderUI({
-        HTML("<b>Step 2:</b> Calculating lambda value...")
-      })
-      Sys.sleep(0.5) # Simulate some processing delay
-      lambda <- median(df$chi, na.rm = TRUE) / qchisq(0.5, 1)
-      
-      # Step 4: Prepare data for QQ plot
-      output$qqPlotMessage <- renderUI({
-        HTML("<b>Step 3:</b> Preparing data for QQ plot...")
-      })
-      Sys.sleep(0.5) # Simulate some processing delay
-      observed <- sort(filtered_data()$`p-value`)
-      lobs <- -log10(observed)
-      
-      expected <- -log10(ppoints(length(observed)))
-      
-      # Step 5: Render QQ plot
-      output$qqPlotMessage <- renderUI({
-        HTML("<b>Step 4:</b> Generating QQ plot...")
-      })
-      Sys.sleep(1) # Simulate some processing delay
-      
-      plot(
-        c(0, max(expected)), c(0, max(lobs)), col = "red", lwd = 3, type = "l",
-        xlab = "Expected (-logP)", ylab = "Observed (-logP)", 
-        xlim = c(0, max(expected)), ylim = c(0, max(lobs)), las = 1, xaxs = "i", yaxs = "i", bty = "l"
-      )
-      points(expected, lobs, pch = 23, cex = 0.4, bg = "black")
-      text(1, max(lobs) * 0.9, paste0("Lambda = ", round(lambda, 3)), adj = 0, cex = 0.8, font = 2, col = "blue")
-      
-      # Step 6: Completion
-      output$qqPlotMessage <- renderUI({
-        HTML("<b>Step 5:</b> QQ plot successfully generated.")
+      withProgress(message = "Generating QQ Plot...", value = 0, {
+        
+        # Step 1: Start processing
+        output$qqPlotMessage <- renderUI(HTML("<b>Step 1:</b> Estimating chi distribution for the provided data..."))
+        Sys.sleep(0.5)
+        incProgress(0.2, detail = "Calculating chi-squared distribution...")
+        
+        # Step 2: Estimate chi distribution
+        chi <- qchisq(1 - filtered_data()$`p-value`, 1)
+        df <- data.frame(chi)
+        
+        # Step 3: Calculate lambda
+        output$qqPlotMessage <- renderUI(HTML("<b>Step 2:</b> Calculating lambda value..."))
+        Sys.sleep(0.5)
+        incProgress(0.4, detail = "Computing lambda genomic inflation factor...")
+        
+        lambda <- median(df$chi, na.rm = TRUE) / qchisq(0.5, 1)
+        
+        output$qqPlotMessage <- renderUI(HTML(paste0("<b>Lambda Value:</b> ", round(lambda, 3))))
+        Sys.sleep(0.5)
+        
+        # Step 4: Prepare data for QQ plot
+        output$qqPlotMessage <- renderUI(HTML("<b>Step 3:</b> Preparing data for QQ plot..."))
+        Sys.sleep(0.5)
+        incProgress(0.6, detail = "Sorting p-values for QQ plot...")
+        
+        observed <- sort(filtered_data()$`p-value`)
+        lobs <- -log10(observed)
+        
+        expected <- -log10(ppoints(length(observed)))
+        
+        # Step 5: Render QQ plot
+        output$qqPlotMessage <- renderUI(HTML("<b>Step 4:</b> Now plotting QQ plot..."))
+        Sys.sleep(1)
+        incProgress(0.8, detail = "Rendering QQ plot...")
+        
+        plot(
+          c(0, max(expected)), c(0, max(lobs)), col = "red", lwd = 3, type = "l",
+          xlab = "Expected (-logP)", ylab = "Observed (-logP)", 
+          xlim = c(0, max(expected)), ylim = c(0, max(lobs)), las = 1, xaxs = "i", yaxs = "i", bty = "l"
+        )
+        points(expected, lobs, pch = 23, cex = 0.4, bg = "black")
+        
+        # Show lambda value on the plot
+        text(1, max(lobs) * 0.9, paste0("Lambda = ", round(lambda, 3)), adj = 0, cex = 0.8, font = 4, col = "blue")
+        
+        # Step 6: Completion
+        output$qqPlotMessage <- renderUI(HTML("<b>Step 5:</b> QQ plot successfully generated."))
+        incProgress(1)
+        
       })
     }
   })
-  
-  # UI to display messages
-  output$qqPlotMessage <- renderUI({
-    HTML("<b>Initializing QQ plot generation...</b>")
-  })
-  
+
 }
 
 
