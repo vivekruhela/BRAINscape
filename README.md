@@ -1,7 +1,7 @@
 # BRAINscape: A Comprehensive Multi-Omics Analysis Tool
 
 ## Overview
-**BRAINscape** is an R package designed for integrative multi-omics analysis, specifically developed for the **MU-BRAIN dataset** from multiethnic transcriptome project. The package facilitates stratified **eQTL mapping**, **GWAS**, and **Differential Expression Analysis**, providing a user-friendly framework for researchers to explore genetic and transcriptomic associations.
+**BRAINscape** is an R package designed for integrative multi-omics analysis, specifically developed for the **MU-BRAIN dataset**, a multiethnic RNAseq dataset. The package facilitates stratified **eQTL mapping**, **GWAS**, and **Differential Expression Analysis**, providing a user-friendly framework for researchers to explore genetic and transcriptomic associations.
 
 ## Features
 - **eQTL Analysis**: Supports **cis** and **trans** eQTL mapping.
@@ -15,14 +15,14 @@
   - **QQ Plots** for GWAS data distribution.
 
 ## Installation
-To install **BRAINscape**, first down the source file from [zenodo](https://zenodo.org/records/14803947) and then install using the following command:
+To install BRAINscape, first download the source file from [zenodo](https://zenodo.org/records/14803947) and then install it using the following command:
 
 ```r
 install.packages("BRAINscape_0.1.0.tar.gz", repo=NULL, type="source")
 ```
 
 ## Usage
-To launch the interactive **BRAINscape** Shiny application:
+To launch BRAINscape Shiny application:
 
 ```r
 library(BRAINscape)
@@ -32,7 +32,7 @@ launch_BRAINscape()
 ## Example Workflow
 ### 1. Load and Explore eQTL Data
 ```r
-Select Ethinicity : Hispanics or Non-Hispanics Whites (NHW)
+Select Ethinicity : Hispanics or Non-Hispanic Whites (NHW)
 Select Analysis Type: eQTL
 Select eQTL Type: cis or trans
 Adjust Nominal P-value Threshold
@@ -40,14 +40,14 @@ Adjust Nominal P-value Threshold
 
 ### 2. Load and Explore Differential Expression Analysis Results
 ```r
-Select Ethinicity : Hispanics or Non-Hispanics Whites (NHW)
+Select Ethinicity : Hispanics or Non-Hispanic Whites (NHW)
 Select Analysis Type: Differential Gene Expression
-Adjust Cutoff for p-adjusted, BaseMean, and Lof2FoldChange)
+Adjust Cutoff for p-value (adjusted), BaseMean, and Log2FoldChange
 ```
 
 ### 3. Load and Explore GWAS Analysis Results
 ```r
-Select Ethinicity : Hispanics or Non-Hispanics Whites (NHW)
+Select Ethinicity : Hispanics or Non-Hispanic Whites (NHW)
 Select Analysis Type: GWAS
 ```
 
@@ -55,7 +55,7 @@ Select Analysis Type: GWAS
 - The **BRAINscape** package does not include raw data due to data sharing constraints.
 
 ## Citation
-If you use **BRAINscape** in your research, please cite:
+If you use BRAINscape for your research, please cite:
 > Yang, Z., Cieza, B., Reyes-Dumeyer, D., Lee, A., Ma, Y., Yilmaz, E., Lantigua, R., Miller, G.W., Brown, L.M., Honig, L. and Ciener, B., 2024. MU-BRAIN: MUltiethnic Brain Rna-seq for Alzheimer INitiative. bioRxiv, pp.2024-02.
 
 ## Contributing
