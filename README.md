@@ -69,7 +69,7 @@ We welcome contributions! To contribute:
 For issues and feature requests, please open a ticket on **GitHub Issues**.
 
 ## License
-This package is licensed under the ** Apache License**. See `LICENSE` for details.
+This package is licensed under the **Apache License**. See `LICENSE` for details.
 
 ---
 **BRAINscape: Unlocking the Genetics of the Brain.**
