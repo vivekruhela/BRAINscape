@@ -20,7 +20,7 @@
 2. To install BRAINscape, first download the source file from [zenodo](https://zenodo.org/records/14852066) and then install it using the following command:
 
 ```r
-install.packages("BRAINscape_0.1.1.tar.gz", repo=NULL, type="source")
+install.packages("BRAINscape_0.2.1.tar.gz", repo=NULL, type="source")
 ```
 
 ## Usage
@@ -59,7 +59,7 @@ If you use BRAINscape for your research, please cite:
 
 Yang, Z., Cieza, B., Reyes-Dumeyer, D., Lee, A., Ma, Y., Yilmaz, E., Lantigua, R., Miller, G.W., Brown, L.M., Honig, L. and Ciener, B., 2024. MU-BRAIN: MUltiethnic Brain Rna-seq for Alzheimer INitiative. bioRxiv, pp.2024-02.
 
-Ruhela, V., Basilio Cieza Huaman, Zikun Yang, & Giuseppe Tosto. (2025). BRAINscape (0.1.1). Zenodo. https://doi.org/10.5281/zenodo.14846328
+Ruhela, V., Basilio Cieza Huaman, Zikun Yang, & Giuseppe Tosto. (2025). BRAINscape. Zenodo. [https://doi.org/10.5281/zenodo.14852066](https://doi.org/10.5281/zenodo.14852066)
 
 ## Contributing
 
