@@ -7,5 +7,5 @@
 launchApp()
 }
 \description{
-This function launches the Shiny app for visualizing eQTL, GWAS, and DESeq2 results.
+This function launches the Shiny app for visualizing eQTL and DESeq2 results.
 }

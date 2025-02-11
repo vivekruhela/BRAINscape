@@ -5,7 +5,7 @@
 \packageTitle{BRAINscape}
 }
 \description{
-\code{BRAINscape} allows user to to visualize eQTL, GWAS, and DESeq2 analysis results through an interactive Shiny app for Hispanics and Non-Hispanics White (NHW) in MU-BRAINS dataset.
+\code{BRAINscape} allows user to to visualize eQTL and DESeq2 analysis results through an interactive Shiny app for Hispanics and Non-Hispanics White (NHW) in MU-BRAINS dataset.
 }
 \usage{
 library(BRAINscape)
@@ -18,7 +18,6 @@ BRAINscape::launchApp()
 
 \keyword{Genetics}
 \keyword{eQTL}
-\keyword{GWAS}
 \keyword{Alzheimer's Disease}
 
 %% Uncomment below to imitate parts of library(help = BRAINscape)

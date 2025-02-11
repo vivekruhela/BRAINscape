@@ -22,7 +22,7 @@ ui <- fluidPage(
     sidebarPanel(
       selectInput("ethnicity", "Select Ethnicity:", choices = c("Hispanics", "NonHispanics")),
       selectInput("analysisType", "Select Analysis Type:", 
-                  choices = c("eQTL", "GWAS", "Differential Expression Analysis")),
+                  choices = c("eQTL", "Differential Expression Analysis")),
       
       # Conditional UI for eQTL analysis
       conditionalPanel(
@@ -45,7 +45,6 @@ ui <- fluidPage(
       tabsetPanel(
         tabPanel("Summary Table", DTOutput("summaryTable")),
         tabPanel("Manhattan Plot", plotOutput("manhattanPlot")),
-        tabPanel("QQ Plot", plotOutput("qqPlot")),
         tabPanel("Volcano Plot", plotOutput("volcanoPlot"))
       )
     )
@@ -57,27 +56,6 @@ server <- function(input, output, session) {
   eqtl_data <- reactive({
     req(input$analysisType == "eQTL")
     load_eqtl(package_extdata_path, input$ethnicity, input$eqtlType)
-  })
-  
-  gwas_data <- reactive({
-    req(input$analysisType == "GWAS")
-    withProgress(message = "Loading GWAS data...", value = 0, {
-      # Step 1: Initialize
-      incProgress(0.2, detail = "Initializing data loading...")
-      Sys.sleep(0.25) # Simulate some processing time
-      
-      # Step 2: Load the data
-      gwas <- load_gwas(package_extdata_path, input$ethnicity)
-      incProgress(0.5, detail = "Loading GWAS data into memory...")
-      Sys.sleep(0.25) # Simulate some processing time
-      
-      # Step 3: Finalizing
-      incProgress(0.3, detail = "Finalizing...")
-      Sys.sleep(0.25) # Simulate some processing time
-      
-      # Return the loaded data
-      gwas
-    })
   })
   
   deseq2_data <- reactive({
@@ -123,8 +101,6 @@ server <- function(input, output, session) {
     if (input$analysisType == "eQTL") {
       req(input$gene, input$pval_nominal)
       eqtl_data() %>% filter(gene == input$gene & pval <= input$pval_nominal)
-    } else if (input$analysisType == "GWAS") {
-      gwas_data()
     } else {
       req(input$p_adjusted, input$base_mean, input$log2fc)
       deseq2_data() %>% filter(padj <= as.numeric(input$p_adjusted) & baseMean >= input$base_mean & abs(log2FoldChange) >= input$log2fc)
@@ -201,121 +177,6 @@ server <- function(input, output, session) {
              highlight.col = "red")
       
       
-    } else if (input$analysisType == "GWAS") {
-      
-      # Manhattan plot for GWAS
-      req(input$analysisType == "GWAS", filtered_data())
-      
-      # Prepare GWAS data
-      gwas_data <- filtered_data()
-      manhattan_df <- data.frame(
-        SNP = gwas_data$snp,
-        Chromosome = as.factor(gwas_data$chr),
-        Position = gwas_data$pos,
-        P = gwas_data$`p-value`
-      )
-      
-      manhattan_df <- manhattan_df %>% arrange(P)
-      
-      message("Manhattan data is prepared and the dimension is = ", dim(manhattan_df))
-      
-      manhattan_df <- head(manhattan_df, n = 50000)
-      
-      message("Now the dimension is = ", dim(manhattan_df))
-      
-      if (nrow(manhattan_df) == 0) {
-        plot(1, type = "n", main = "No data available for the selected criteria.", xlab = "", ylab = "")
-        return()
-      }
-      
-      # Calculate significance thresholds
-      significant_threshold <- 0.05 / nrow(manhattan_df)
-      suggestive_threshold <- significant_threshold * 100
-      SNPs <- manhattan_df$SNP[1:5]
-      
-      manhattan_df <- manhattan_df %>%
-        mutate(Chromosome = as.numeric(gsub("chr", "", Chromosome))) %>%
-        arrange(Chromosome, Position)
-      
-      CMplot(manhattan_df,
-             type="p",
-             plot.type="m",
-             col = c("blue", "red"),
-             LOG10=TRUE,
-             file = NULL,
-             cex = 0.6,
-             main = paste0("Genome-wide Association Study (GWAS) Manhattan Plot of top 50K hits for ", input$ethnicity, " Cohort"),
-             file.output=F,
-             verbose=F,
-             width=14,
-             height=6,
-             chr.labels.angle=45,
-             highlight=SNPs,
-             highlight.text=SNPs,
-             highlight.text.cex=1.4,
-             highlight.col = "red")
-      
-      
-    }
-  })
-  
-  
-  output$qqPlot <- renderPlot({
-    req(filtered_data())
-    
-    if (input$analysisType == "GWAS") {
-      
-      withProgress(message = "Generating QQ Plot...", value = 0, {
-        
-        # Step 1: Start processing
-        output$qqPlotMessage <- renderUI(HTML("<b>Step 1:</b> Estimating chi distribution for the provided data..."))
-        Sys.sleep(0.5)
-        incProgress(0.2, detail = "Calculating chi-squared distribution...")
-        
-        # Step 2: Estimate chi distribution
-        chi <- qchisq(1 - filtered_data()$`p-value`, 1)
-        df <- data.frame(chi)
-        
-        # Step 3: Calculate lambda
-        output$qqPlotMessage <- renderUI(HTML("<b>Step 2:</b> Calculating lambda value..."))
-        Sys.sleep(0.5)
-        incProgress(0.4, detail = "Computing lambda genomic inflation factor...")
-        
-        lambda <- median(df$chi, na.rm = TRUE) / qchisq(0.5, 1)
-        
-        output$qqPlotMessage <- renderUI(HTML(paste0("<b>Lambda Value:</b> ", round(lambda, 3))))
-        Sys.sleep(0.5)
-        
-        # Step 4: Prepare data for QQ plot
-        output$qqPlotMessage <- renderUI(HTML("<b>Step 3:</b> Preparing data for QQ plot..."))
-        Sys.sleep(0.5)
-        incProgress(0.6, detail = "Sorting p-values for QQ plot...")
-        
-        observed <- sort(filtered_data()$`p-value`)
-        lobs <- -log10(observed)
-        
-        expected <- -log10(ppoints(length(observed)))
-        
-        # Step 5: Render QQ plot
-        output$qqPlotMessage <- renderUI(HTML("<b>Step 4:</b> Now plotting QQ plot..."))
-        Sys.sleep(1)
-        incProgress(0.8, detail = "Rendering QQ plot...")
-        
-        plot(
-          c(0, max(expected)), c(0, max(lobs)), col = "red", lwd = 3, type = "l",
-          xlab = "Expected (-logP)", ylab = "Observed (-logP)", 
-          xlim = c(0, max(expected)), ylim = c(0, max(lobs)), las = 1, xaxs = "i", yaxs = "i", bty = "l"
-        )
-        points(expected, lobs, pch = 23, cex = 0.4, bg = "black")
-        
-        # Show lambda value on the plot
-        text(1, max(lobs) * 0.9, paste0("Lambda = ", round(lambda, 3)), adj = 0, cex = 0.8, font = 4, col = "blue")
-        
-        # Step 6: Completion
-        output$qqPlotMessage <- renderUI(HTML("<b>Step 5:</b> QQ plot successfully generated."))
-        incProgress(1)
-        
-      })
     }
   })
 

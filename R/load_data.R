@@ -27,17 +27,6 @@ load_eqtl <- function(path, ethnicity, type) {
   }
   data
 }
-
-#' Load GWAS data
-#' @export
-load_gwas <- function(path, ethnicity) {
-  if (ethnicity == "Hispanics") {
-    data <- readRDS(file.path(path, "gwas/Hispanics_allchr_logistic.BRAAK_presidual.glm.linear4.rds"))
-  } else {
-    data <- readRDS(file.path(path, "gwas/NonHispanics_allchr_logistic.BRAAK_presidual.glm.linear4.rds"))
-  }
-  data
-}
   
 #' Load DESeq2 data
 #' @export
