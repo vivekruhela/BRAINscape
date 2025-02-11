@@ -27,6 +27,11 @@ install.packages("BRAINscape_0.1.1.tar.gz", repo=NULL, type="source")
 
 ## Usage
 
+```r
+library(BRAINscape)
+BRAINscape::launchApp()
+```
+
 ## Example Workflow
 
 ### 1. Load and Explore eQTL Data
