@@ -5,6 +5,8 @@ suppressPackageStartupMessages({
   library(ggplot2)
   library(dplyr)
   library(CMplot)
+  library(DT)
+  library(ggrepel)
   
 })
 
@@ -12,8 +14,7 @@ rm(list = ls())
 gc()
 
 # Load functions
-package_extdata_path <- paste(system.file(package = "BRAINscape"), "inst", "extdata", sep = "/")
-source(paste(system.file(package = "BRAINscape"), "R", "load_data.R", sep = "/"))
+package_extdata_path <- paste(system.file(package = "BRAINscape"), "extdata", sep = "/")
 
 ui <- fluidPage(
   titlePanel("Analysis Viewer"),

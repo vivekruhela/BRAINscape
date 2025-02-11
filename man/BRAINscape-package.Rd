@@ -5,7 +5,7 @@
 \packageTitle{BRAINscape}
 }
 \description{
-\code{BRAINscape} allows user to explore the Expression Quantitative Trait Loci (eQTL) and Genome-wide Association Study (GWAS) analysis performed on Hispanics and Non-Hispanics Whites (NHW) individuals in MU-BRAIN dataset.
+\code{BRAINscape} allows user to to visualize eQTL, GWAS, and DESeq2 analysis results through an interactive Shiny app for Hispanics and Non-Hispanics White (NHW) in MU-BRAINS dataset.
 }
 \usage{
 library(BRAINscape)

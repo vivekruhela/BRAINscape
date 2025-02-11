@@ -1,3 +1,9 @@
+#' Load eQTL data
+#' @param path The base path to data files
+#' @param ethnicity "Hispanics" or "NonHispanics"
+#' @param type "cis" or "trans"
+#' @return The loaded eQTL data
+#' @export
 load_eqtl <- function(path, ethnicity, type) {
 
   if (type == "cis") {
@@ -22,6 +28,8 @@ load_eqtl <- function(path, ethnicity, type) {
   data
 }
 
+#' Load GWAS data
+#' @export
 load_gwas <- function(path, ethnicity) {
   if (ethnicity == "Hispanics") {
     data <- readRDS(file.path(path, "gwas/Hispanics_allchr_logistic.BRAAK_presidual.glm.linear4.rds"))
@@ -31,6 +39,8 @@ load_gwas <- function(path, ethnicity) {
   data
 }
   
+#' Load DESeq2 data
+#' @export
 load_deseq2 <- function(path, ethnicity) {
   if (ethnicity == "Hispanics") {
     data <- readRDS(file.path(path, "deseq2/DESeq2_Model1_AD_Conti_hispanic.rds"))
@@ -38,4 +48,4 @@ load_deseq2 <- function(path, ethnicity) {
     data <- readRDS(file.path(path, "deseq2/DESeq2_Model1_AD_Conti_white.rds"))
   }
     data
-  }
+}
