@@ -1,4 +1,3 @@
-
 # BRAINscape: A Comprehensive Multi-Omics Analysis Tool
 
 ## Overview
@@ -27,13 +26,6 @@ install.packages("BRAINscape_0.1.1.tar.gz", repo=NULL, type="source")
 ```
 
 ## Usage
-
-To launch BRAINscape Shiny application:
-
-```r
-library(BRAINscape)
-BRAINscape::launchApp()
-```
 
 ## Example Workflow
 
@@ -69,7 +61,7 @@ Select Analysis Type: GWAS
 
 If you use BRAINscape for your research, please cite:
 
-> Yang, Z., Cieza, B., Reyes-Dumeyer, D., Lee, A., Ma, Y., Yilmaz, E., Lantigua, R., Miller, G.W., Brown, L.M., Honig, L. and Ciener, B., 2024. MU-BRAIN: MUltiethnic Brain Rna-seq for Alzheimer INitiative. bioRxiv, pp.2024-02.
+Yang, Z., Cieza, B., Reyes-Dumeyer, D., Lee, A., Ma, Y., Yilmaz, E., Lantigua, R., Miller, G.W., Brown, L.M., Honig, L. and Ciener, B., 2024. MU-BRAIN: MUltiethnic Brain Rna-seq for Alzheimer INitiative. bioRxiv, pp.2024-02.
 
 ## Contributing
 
