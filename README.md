@@ -2,19 +2,17 @@
 
 ## Overview
 
-**BRAINscape** is an R package designed for integrative multi-omics analysis, specifically developed for the **MU-BRAIN dataset**, a multiethnic RNAseq dataset. The package facilitates stratified **eQTL mapping**, **GWAS**, and **Differential Expression Analysis**, providing a user-friendly framework for researchers to explore genetic and transcriptomic associations.
+**BRAINscape** is an R package designed for integrative multi-omics analysis, specifically developed for the **MU-BRAIN dataset**, a multiethnic RNAseq dataset. The package facilitates stratified **eQTL mapping** and **Differential Expression Analysis**, providing a user-friendly framework for researchers to explore genetic and transcriptomic associations.
 
 ## Features
 
 - **eQTL Analysis**: Supports **cis** and **trans** eQTL mapping.
-- **GWAS Analysis**: Conducts genome-wide association studies with interactive visualizations.
 - **Differential Expression Analysis**: Uses **DESeq2** for robust transcriptomic profiling.
 - **Interactive Data Exploration**: Shiny-based web interface for **data visualization**.
 - **Supports Ethnicity-Specific Analysis**: Users can filter results by **Hispanic** and **Non-Hispanic** groups.
 - **Advanced Visualization**:
-  - **Manhattan Plots** for eQTL/GWAS results.
+  - **Manhattan Plots** for eQTL results.
   - **Volcano Plots** for Differential Expression Analysis.
-  - **QQ Plots** for GWAS data distribution.
 
 ## Installation
 
@@ -49,13 +47,6 @@ Adjust Nominal P-value Threshold
 Select Ethinicity : Hispanics or Non-Hispanic Whites (NHW)
 Select Analysis Type: Differential Gene Expression
 Adjust Cutoff for p-value (adjusted), BaseMean, and Log2FoldChange
-```
-
-### 3. Load and Explore GWAS Analysis Results
-
-```r
-Select Ethinicity : Hispanics or Non-Hispanic Whites (NHW)
-Select Analysis Type: GWAS
 ```
 
 ## Data Sources
