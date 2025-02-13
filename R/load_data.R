@@ -25,6 +25,7 @@ load_eqtl <- function(path, ethnicity, type) {
       data <- readRDS(file.path(path, "eqtl/Hispanics/BRAIN_Hispanics_tensoreqtl_trans_eqtl_allchr.rds"))
     }
   }
+  data <- data %>% filter(!grepl("^MIR", gene)) %>% filter(!grepl("^LINC", gene))
   data
 }
   

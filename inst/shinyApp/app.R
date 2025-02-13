@@ -29,7 +29,7 @@ ui <- fluidPage(
         condition = "input.analysisType == 'eQTL'",
         radioButtons("eqtlType", "Select eQTL Type:", choices = c("cis", "trans")),
         selectizeInput("gene", "Select Gene (eQTL):", choices = NULL, multiple = FALSE),
-        sliderInput("pval_nominal", "Nominal P-Value Threshold:", min = 0, max = 1, value = 0.05, step = 0.01),
+        sliderInput("FDR", "Adjusted P-Value Threshold:", min = 0, max = 1, value = 0.05, step = 0.01),
         actionButton("filterBtn", "Apply Filter")
       ),
       
@@ -45,6 +45,7 @@ ui <- fluidPage(
       tabsetPanel(
         tabPanel("Summary Table", DTOutput("summaryTable")),
         tabPanel("Manhattan Plot", plotOutput("manhattanPlot")),
+        tabPanel("QQ Plot", plotOutput("qqPlot")),
         tabPanel("Volcano Plot", plotOutput("volcanoPlot"))
       )
     )
@@ -65,32 +66,16 @@ server <- function(input, output, session) {
     })
   })
   
-  expression_data <- reactive({
-    req(input$analysisType == "Differential Expression Analysis")
-    withProgress(message = "Loading Expression data...", value = 0, {
-      load_expression_data(package_extdata_path, input$ethnicity)
-    })
-  })
-  
-  pheno_data <- reactive({
-    req(input$analysisType == "Differential Expression Analysis")
-      load_pheno_data(package_extdata_path)
-  })
-  
-  sample_data <- reactive({
-    req(input$analysisType == "Differential Expression Analysis")
-    load_samples(package_extdata_path, input$ethnicity)
-  })
-  
   # Observing and updating gene dropdown for eQTL analysis
   observe({
     if (input$analysisType == "eQTL") {
-      req(eqtl_data(), input$pval_nominal)
+      req(eqtl_data(), input$FDR)
       filtered_genes <- eqtl_data() %>%
-        filter(pval < input$pval_nominal) %>%
+        filter(FDR < input$FDR) %>%
         pull(gene) %>%
         unique()
-      updateSelectizeInput(session, "gene", choices = filtered_genes, server = TRUE)
+      message("adding ", length(filtered_genes), " genes in the drop-down list....")
+      updateSelectizeInput(session, "gene", choices = filtered_genes, server = TRUE, options = list(maxOptions = 15000))
     } else {
       updateSelectizeInput(session, "gene", choices = NULL, server = TRUE)
     }
@@ -99,8 +84,9 @@ server <- function(input, output, session) {
   # Filtering data based on analysis type
   filtered_data <- reactive({
     if (input$analysisType == "eQTL") {
-      req(input$gene, input$pval_nominal)
-      eqtl_data() %>% filter(gene == input$gene & pval <= input$pval_nominal)
+      req(input$gene, input$FDR)
+      eqtl_data() %>%
+        filter(gene == input$gene & FDR <= input$FDR)
     } else {
       req(input$p_adjusted, input$base_mean, input$log2fc)
       deseq2_data() %>% filter(padj <= as.numeric(input$p_adjusted) & baseMean >= input$base_mean & abs(log2FoldChange) >= input$log2fc)
@@ -134,7 +120,7 @@ server <- function(input, output, session) {
       ggtitle(paste0('Volcano Plot for ', input$ethnicity, ' ethnicity')) +
       geom_text_repel(max.overlaps = 20, size = 5, box.padding = 0.5, max.time = 3) +  # Improve readability +
       theme_minimal(base_size = 14)  # Better font clarity
-    }, height = 700, width = 700)
+  }, height = 700, width = 700)
   
   
   # Manhattan Plot
@@ -148,7 +134,7 @@ server <- function(input, output, session) {
         SNP = filtered_data()$snp,
         Chromosome = filtered_data()$CHR,
         Position = filtered_data()$POS,
-        P = filtered_data()$pval
+        P = filtered_data()$FDR
       )
       
       if (nrow(manhattan_df) <= 1) {
@@ -160,8 +146,19 @@ server <- function(input, output, session) {
       output$manhattanPlotMessage <- renderText("")  # Clear any previous message
       
       manhattan_df <- manhattan_df %>% arrange(P)
+      if (dim(manhattan_df)[1] > 5){
+        
+        snp_annot <- manhattan_df$SNP[1:5]
+        
+      } else {
+        
+        snp_annot <- manhattan_df$SNP
+        
+      }
       
-      snp_annot <- manhattan_df$SNP[1:5]
+      unique_chr_list <- unique(manhattan_df$Chromosome)
+      chr_num <- unlist(sapply(unique_chr_list, function(x) strsplit(x, "chr")[[1]][2]))
+      message("Setting ", chr_num, " as x-axis labels....")
       CMplot(manhattan_df,
              type="p",
              plot.type="m",
@@ -174,12 +171,12 @@ server <- function(input, output, session) {
              highlight=snp_annot, 
              highlight.text=snp_annot, 
              highlight.text.cex=1.4,
-             highlight.col = "red")
-      
-      
+             highlight.col = "red", 
+             chr.labels = unname(chr_num),
+             chr.den.col = NULL)
     }
   })
-
+  
 }
 
 
