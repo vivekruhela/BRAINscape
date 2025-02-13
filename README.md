@@ -20,7 +20,7 @@
 2. To install BRAINscape, first download the source file from [zenodo](https://zenodo.org/records/14867779) and then install it using the following command:
 
 ```r
-install.packages("BRAINscape_0.2.1.tar.gz", repo=NULL, type="source")
+install.packages("BRAINscape_0.2.2.tar.gz", repo=NULL, type="source")
 ```
 
 ## Usage
