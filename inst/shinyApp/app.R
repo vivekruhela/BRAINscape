@@ -20,9 +20,10 @@ ui <- fluidPage(
   titlePanel("Analysis Viewer"),
   sidebarLayout(
     sidebarPanel(
-      selectInput("ethnicity", "Select Ethnicity:", choices = c("Hispanics", "NonHispanics")),
+      uiOutput("ethnicity_ui"),
       selectInput("analysisType", "Select Analysis Type:", 
                   choices = c("eQTL", "Differential Expression Analysis")),
+      uiOutput("ethnicity_ui"),
       
       # Conditional UI for eQTL analysis
       conditionalPanel(
@@ -36,7 +37,7 @@ ui <- fluidPage(
       # Conditional UI for DESeq2 analysis
       conditionalPanel(
         condition = "input.analysisType == 'Differential Expression Analysis'",
-        selectInput("p_adjusted", label = "Cutoff for p-adjusted:", choices = c("0.00001" = 0.00001,"0.0001" = 0.0001,"0.001" = 0.001, "0.01" = 0.01, "0.05" = 0.05, "1.0" = 1.0)),
+        selectInput("p_adjusted", label = "Adjusted P-Value Threshold:", choices = c("0.00001" = 0.00001,"0.0001" = 0.0001,"0.001" = 0.001, "0.01" = 0.01, "0.05" = 0.05, "1.0" = 1.0)),
         numericInput("base_mean", label = "Minimal base mean:", value = 0),
         numericInput("log2fc", label = "Minimal abs(log2 fold change):", value = 0)
       )
@@ -45,7 +46,6 @@ ui <- fluidPage(
       tabsetPanel(
         tabPanel("Summary Table", DTOutput("summaryTable")),
         tabPanel("Manhattan Plot", plotOutput("manhattanPlot")),
-        tabPanel("QQ Plot", plotOutput("qqPlot")),
         tabPanel("Volcano Plot", plotOutput("volcanoPlot"))
       )
     )
@@ -53,11 +53,31 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+  # Dynamically render the ethnicity selection based on analysis type
+  output$ethnicity_ui <- renderUI({
+    if (input$analysisType == "eQTL") {
+      selectInput("ethnicity", "Select Ethnicity:", choices = c("Hispanics", "Non-Hispanic Whites (NHW)"))
+    } else if (input$analysisType == "Differential Expression Analysis") {
+      selectInput("ethnicity", "Select Ethnicity:", choices = c("MU-BRAIN", "Hispanics", "Non-Hispanic Whites (NHW)"))
+    }
+  })
+  
   # Reactive variables for data loading
   eqtl_data <- reactive({
-    req(input$analysisType == "eQTL")
+    req(input$analysisType == "eQTL", input$ethnicity, input$eqtlType)
+    
+    # Debugging messages
+    message("eqtl_data() called with:")
+    message("Ethnicity: ", input$ethnicity)
+    message("eQTL Type: ", input$eqtlType)
+    
+    if (is.null(input$ethnicity) || is.null(input$eqtlType)) {
+      stop("Error: Ethnicity or eQTL Type is NULL in eqtl_data() reactive function")
+    }
+    
     load_eqtl(package_extdata_path, input$ethnicity, input$eqtlType)
   })
+  
   
   deseq2_data <- reactive({
     req(input$analysisType == "Differential Expression Analysis")
@@ -106,21 +126,44 @@ server <- function(input, output, session) {
     res$diffexpressed <- ifelse(res$log2FoldChange > 0, "UP", "DOWN")
     colnames(res)[1] <- "gene_symbol"
     res$delabel <- ifelse(res$gene_symbol %in% head(res[order(res$padj), "gene_symbol"], 30), res$gene_symbol, NA)
-    ggplot(data = res, aes(x = log2FoldChange, y = -log10(pvalue), col = diffexpressed, label = delabel)) +
-      geom_vline(xintercept = c(-0.6, 0.6), col = "gray", linetype = 'dashed') +
-      geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
-      geom_point(size = 2) +
-      # Updated colors for UP, DOWN, and NO genes
-      scale_color_manual(values = c("DOWN" = "#00AFBB", "UP" = "#bb0c00"), 
-                         labels = c("Downregulated",  "Upregulated")) + 
-      coord_cartesian(ylim = c(0, 15), xlim = c(-2, 2)) + 
-      labs(color = 'Expression Status', # Updated legend title
-           x = expression("log"[2]*"FC"), y = expression("-log"[10]*"p-value")) +
-      scale_x_continuous(breaks = seq(-2, 2, 0.5)) + 
-      ggtitle(paste0('Volcano Plot for ', input$ethnicity, ' ethnicity')) +
-      geom_text_repel(max.overlaps = 20, size = 5, box.padding = 0.5, max.time = 3) +  # Improve readability +
-      theme_minimal(base_size = 14)  # Better font clarity
-  }, height = 700, width = 700)
+    
+    if  (input$ethnicity == "MU-BRAIN"){
+      
+      ggplot(data = res, aes(x = log2FoldChange, y = -log10(pvalue), col = diffexpressed, label = delabel)) +
+        geom_vline(xintercept = c(-0.6, 0.6), col = "gray", linetype = 'dashed') +
+        geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+        geom_point(size = 2) +
+        # Updated colors for UP, DOWN, and NO genes
+        scale_color_manual(values = c("DOWN" = "#00AFBB", "UP" = "#bb0c00"), 
+                           labels = c("Downregulated",  "Upregulated")) + 
+        coord_cartesian(ylim = c(0, 25), xlim = c(-2, 2)) + 
+        labs(color = 'Expression Status', # Updated legend title
+             x = expression("log"[2]*"FC"), y = expression("-log"[10]*"p-value")) +
+        scale_x_continuous(breaks = seq(-2, 2, 0.5)) + 
+        ggtitle(paste0('Volcano Plot for ', input$ethnicity, ' ethnicity')) +
+        geom_text_repel(max.overlaps = 20, size = 5, box.padding = 0.5, max.time = 3) +  # Improve readability +
+        theme_minimal(base_size = 14)
+      
+    } else {
+      
+      ggplot(data = res, aes(x = log2FoldChange, y = -log10(pvalue), col = diffexpressed, label = delabel)) +
+        geom_vline(xintercept = c(-0.6, 0.6), col = "gray", linetype = 'dashed') +
+        geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+        geom_point(size = 2) +
+        # Updated colors for UP, DOWN, and NO genes
+        scale_color_manual(values = c("DOWN" = "#00AFBB", "UP" = "#bb0c00"), 
+                           labels = c("Downregulated",  "Upregulated")) + 
+        coord_cartesian(ylim = c(0, 15), xlim = c(-2, 2)) + 
+        labs(color = 'Expression Status', # Updated legend title
+             x = expression("log"[2]*"FC"), y = expression("-log"[10]*"p-value")) +
+        scale_x_continuous(breaks = seq(-2, 2, 0.5)) + 
+        ggtitle(paste0('Volcano Plot for ', input$ethnicity, ' ethnicity')) +
+        geom_text_repel(max.overlaps = 20, size = 5, box.padding = 0.5, max.time = 3) +  # Improve readability +
+        theme_minimal(base_size = 14)
+      
+    }
+
+  }, height = 800, width = 800)
   
   
   # Manhattan Plot
@@ -137,9 +180,9 @@ server <- function(input, output, session) {
         P = filtered_data()$FDR
       )
       
-      if (nrow(manhattan_df) <= 1) {
-        output$manhattanPlotMessage <- renderText("The Manhattan plot can't be generated for less than one SNP.")
-        plot(1, type = "n", xlab = "", ylab = "", main = "The Manhattan plot can't be generated for less than one SNP.")
+      if (nrow(manhattan_df) <= 2) {
+        output$manhattanPlotMessage <- renderText("The Manhattan plot can't be generated for less than two SNPs.")
+        plot(1, type = "n", xlab = "", ylab = "", main = "The Manhattan plot can't be generated for less than two SNPs.")
         return()
       }
       
@@ -165,7 +208,7 @@ server <- function(input, output, session) {
              col = c("blue", "red"),
              LOG10=TRUE,
              file = NULL,
-             cex = 0.6, main = paste0("Manhattan Plot of Cis-eQTL Analysis for ", input$gene, " Gene in ", input$ethnicity, " Cohort"),
+             cex = 0.6, main = paste0("Manhattan Plot of ", input$eqtlType, "-eQTL Analysis for ", input$gene, " Gene in ", input$ethnicity, " Cohort"),
              file.output=F,verbose=F,
              width=14,height=6,chr.labels.angle=45,
              highlight=snp_annot, 
@@ -173,11 +216,12 @@ server <- function(input, output, session) {
              highlight.text.cex=1.4,
              highlight.col = "red", 
              chr.labels = unname(chr_num),
-             chr.den.col = NULL)
+             chr.den.col = NULL
+             )
     }
   })
   
+  
 }
-
 
 shinyApp(ui = ui, server = server)

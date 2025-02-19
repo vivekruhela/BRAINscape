@@ -1,7 +1,7 @@
 Package: BRAINscape
 Type: Package
 Title: Shiny GUI for eQTL and DESeq2 Results in MU-BRAIN Dataset
-Version: 0.2.1
+Version: 0.3.1
 Authors@R: c( person("Vivek", "Ruhela", email = "vr2592@cumc.columbia.edu", role = c("aut", "cre")),
               person("Giuseppe", "Tosto", role = "aut", email = "gt2260@cumc.columbia.edu"),     
               person("Basilio Cieza", "Huaman", role = "ctb", email = "bc3045@cumc.columbia.edu"),
