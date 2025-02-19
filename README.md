@@ -9,7 +9,7 @@
 - **eQTL Analysis**: Supports **cis** and **trans** eQTL mapping.
 - **Differential Expression Analysis**: Uses **DESeq2** for robust transcriptomic profiling.
 - **Interactive Data Exploration**: Shiny-based web interface for **data visualization**.
-- **Supports Ethnicity-Specific Analysis**: Users can filter results by **Hispanic** and **Non-Hispanic** groups.
+- **Supports Ethnicity-Specific Analysis**: Users can filter results by **Hispanic** and **Non-Hispanic Whites (NHW)** groups.
 - **Advanced Visualization**:
   - **Manhattan Plots** for eQTL results.
   - **Volcano Plots** for Differential Expression Analysis.
@@ -17,7 +17,7 @@
 ## Installation
 
 1. Install the dependencies: shiny, ggplot2, CMplot, dplyr using `install.packages(c("shiny", "ggplot2", "CMplot", "dplyr", "DT"))`
-2. To install BRAINscape, first download the source file from [zenodo](https://zenodo.org/records/14867779) and then install it using the following command:
+2. To install BRAINscape, first download the source file from [zenodo](https://zenodo.org/records/14893693) and then install it using the following command:
 
 ```r
 install.packages("BRAINscape_0.2.2.tar.gz", repo=NULL, type="source")
@@ -27,7 +27,7 @@ install.packages("BRAINscape_0.2.2.tar.gz", repo=NULL, type="source")
 
 ```r
 library(BRAINscape)
-BRAINscape::launchApp()
+launchApp()
 ```
 
 ## Example Workflow
@@ -44,7 +44,7 @@ Adjust Nominal P-value Threshold
 ### 2. Load and Explore Differential Expression Analysis Results
 
 ```r
-Select Ethinicity : Hispanics or Non-Hispanic Whites (NHW)
+Select Ethinicity : Hispanics or Non-Hispanic Whites (NHW) or MU-BRAIN
 Select Analysis Type: Differential Gene Expression
 Adjust Cutoff for p-value (adjusted), BaseMean, and Log2FoldChange
 ```
@@ -59,7 +59,7 @@ If you use BRAINscape for your research, please cite:
 
 Yang, Z., Cieza, B., Reyes-Dumeyer, D., Lee, A., Ma, Y., Yilmaz, E., Lantigua, R., Miller, G.W., Brown, L.M., Honig, L. and Ciener, B., 2024. MU-BRAIN: MUltiethnic Brain Rna-seq for Alzheimer INitiative. bioRxiv, pp.2024-02.
 
-Ruhela, V., Basilio Cieza Huaman, Zikun Yang, & Giuseppe Tosto. (2025). BRAINscape. Zenodo. [https://doi.org/10.5281/zenodo.14852066](https://doi.org/10.5281/zenodo.14852066)
+Ruhela, V., Basilio Cieza Huaman, Zikun Yang, & Giuseppe Tosto. (2025). BRAINscape. Zenodo. [https://zenodo.org/records/14893693](https://zenodo.org/records/14893693)
 
 ## Contributing
 
