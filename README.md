@@ -61,7 +61,7 @@ If you use BRAINscape for your research, please cite:
 
 Yang, Z., Cieza, B., Reyes-Dumeyer, D., Lee, A., Ma, Y., Yilmaz, E., Lantigua, R., Miller, G.W., Brown, L.M., Honig, L. and Ciener, B., 2024. MU-BRAIN: MUltiethnic Brain Rna-seq for Alzheimer INitiative. bioRxiv, pp.2024-02.
 
-Ruhela, V., Basilio Cieza Huaman, Zikun Yang, & Giuseppe Tosto. (2025). BRAINscape (0.3.1). Genetics and Genomics (Zenodo). [https://doi.org/10.5281/zenodo.14893693](https://doi.org/10.5281/zenodo.14893693)
+Ruhela, V., Basilio Cieza Huaman, Zikun Yang, & Giuseppe Tosto. (2025). BRAINscape (0.3.1). Genetics and Genomics (Zenodo). [https://zenodo.org/records/14925129](https://zenodo.org/records/14925129)
 
 ## Contributing
 
