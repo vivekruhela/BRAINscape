@@ -17,7 +17,7 @@
 ## Installation
 
 1. Install the dependencies: shiny, ggplot2, CMplot, dplyr using `install.packages(c("shiny", "ggplot2", "CMplot", "dplyr", "DT"))`
-2. To install BRAINscape, first download the source file from [zenodo](https://zenodo.org/records/14893693) and then install it using the following command:
+2. To install BRAINscape, first download the source file from [zenodo]([https://zenodo.org/records/14893693](https://zenodo.org/records/14925129)) and then install it using the following command:
 
 ```r
 install.packages("BRAINscape_0.2.2.tar.gz", repo=NULL, type="source")
