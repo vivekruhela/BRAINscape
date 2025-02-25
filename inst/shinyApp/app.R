@@ -30,19 +30,20 @@ ui <- fluidPage(
         condition = "input.analysisType == 'eQTL'",
         radioButtons("eqtlType", "Select eQTL Type:", choices = c("cis", "trans")),
         selectizeInput("gene", "Select Gene (eQTL):", choices = NULL, multiple = FALSE),
-        sliderInput("FDR", "Adjusted P-Value Threshold:", min = 0, max = 1, value = 0.05, step = 0.01),
-        actionButton("filterBtn", "Apply Filter")
+        uiOutput("eqtlFilters")
       ),
       
       # Conditional UI for DESeq2 analysis
       conditionalPanel(
         condition = "input.analysisType == 'Differential Expression Analysis'",
-        selectInput("p_adjusted", label = "Adjusted P-Value Threshold:", choices = c("0.00001" = 0.00001,"0.0001" = 0.0001,"0.001" = 0.001, "0.01" = 0.01, "0.05" = 0.05, "1.0" = 1.0)),
+        selectInput("p_adjusted", label = "Adjusted P-Value Threshold:", 
+                    choices = c("0.00001" = 0.00001,"0.0001" = 0.0001,"0.001" = 0.001, "0.01" = 0.01, "0.05" = 0.05, "1.0" = 1.0)),
         numericInput("base_mean", label = "Minimal base mean:", value = 0),
         numericInput("log2fc", label = "Minimal abs(log2 fold change):", value = 0)
       )
     ),
     mainPanel(
+      textOutput("dataAvailabilityMessage"),
       tabsetPanel(
         tabPanel("Summary Table", DTOutput("summaryTable")),
         tabPanel("Manhattan Plot", plotOutput("manhattanPlot")),
@@ -62,6 +63,21 @@ server <- function(input, output, session) {
     }
   })
   
+  # Render UI elements dynamically based on selection
+  output$eqtlFilters <- renderUI({
+    req(input$ethnicity, input$analysisType)
+    
+    tagList(
+
+      if (input$eqtlType == "trans") {
+        sliderInput("pvalue", "P-Value Threshold:", min = 0, max = 1, value = 0.05, step = 0.01)
+      } else if (input$eqtlType == "cis") {
+        sliderInput("FDR", "Adjusted P-Value Threshold:", min = 0, max = 1, value = 0.05, step = 0.01)
+      },
+      actionButton("filterBtn", "Apply Filter")
+    )
+  })
+  
   # Reactive variables for data loading
   eqtl_data <- reactive({
     req(input$analysisType == "eQTL", input$ethnicity, input$eqtlType)
@@ -75,7 +91,27 @@ server <- function(input, output, session) {
       stop("Error: Ethnicity or eQTL Type is NULL in eqtl_data() reactive function")
     }
     
-    load_eqtl(package_extdata_path, input$ethnicity, input$eqtlType)
+    if (input$eqtlType == "cis"){
+      
+      withProgress(message = "Loading cis-eQTL data...", value = 0, {
+        data <- load_eqtl(package_extdata_path, input$ethnicity, input$eqtlType)
+      })
+      
+    } else {
+      
+      withProgress(message = "Loading trans-eQTL data...", value = 0, {
+        data <- load_eqtl(package_extdata_path, input$ethnicity, input$eqtlType)
+      })
+      
+    }
+    
+    
+    # data <- load_eqtl(package_extdata_path, input$ethnicity, input$eqtlType)
+    
+    if (is.null(data) || nrow(data) == 0) {
+      return(NULL)
+    }
+
   })
   
   
@@ -87,15 +123,64 @@ server <- function(input, output, session) {
   })
   
   # Observing and updating gene dropdown for eQTL analysis
+  eqtl_data <- reactive({
+    req(input$analysisType == "eQTL", input$ethnicity, input$eqtlType)
+    
+    message("eqtl_data() called with:")
+    message("Ethnicity: ", input$ethnicity)
+    message("eQTL Type: ", input$eqtlType)
+    
+    if (is.null(input$ethnicity) || is.null(input$eqtlType)) {
+      stop("Error: Ethnicity or eQTL Type is NULL in eqtl_data() reactive function")
+    }
+    
+    data <- load_eqtl(package_extdata_path, input$ethnicity, input$eqtlType)
+    
+    if (is.null(data) || nrow(data) == 0) {
+      return(NULL)
+    }
+    
+    return(data)
+  })
+  
+  # Observing and updating gene dropdown for eQTL analysis
   observe({
     if (input$analysisType == "eQTL") {
-      req(eqtl_data(), input$FDR)
-      filtered_genes <- eqtl_data() %>%
-        filter(FDR < input$FDR) %>%
-        pull(gene) %>%
-        unique()
-      message("adding ", length(filtered_genes), " genes in the drop-down list....")
-      updateSelectizeInput(session, "gene", choices = filtered_genes, server = TRUE, options = list(maxOptions = 15000))
+      
+      if (input$eqtlType == "cis"){
+        req(eqtl_data(), input$eqtlType, input$ethnicity, input$FDR)
+      } else {
+        
+        req(eqtl_data(), input$eqtlType, input$ethnicity, input$pvalue)
+      }
+      
+      
+      data <- eqtl_data()
+      
+      if (is.null(data)) {
+        updateSelectizeInput(session, "gene", choices = NULL, server = TRUE)
+        return()
+      }
+      
+      if (nrow(data) == 0) {
+        message("No genes satisfy the filter criteria.")
+        updateSelectizeInput(session, "gene", choices = NULL, server = TRUE)
+        return()
+      }
+      
+      filtered_genes <- tryCatch({
+        if (input$eqtlType == "trans") {
+          data %>% filter(pvalue < input$pvalue) %>% pull(gene) %>% unique()
+        } else {
+          data %>% filter(FDR < input$FDR) %>% pull(gene) %>% unique()
+        }
+      }, error = function(e) {
+        NULL
+      })
+      
+      message("Total = ", length(filtered_genes), " are added in the drop-down list.")
+      
+      updateSelectizeInput(session, "gene", choices = filtered_genes, server = TRUE)
     } else {
       updateSelectizeInput(session, "gene", choices = NULL, server = TRUE)
     }
@@ -104,9 +189,25 @@ server <- function(input, output, session) {
   # Filtering data based on analysis type
   filtered_data <- reactive({
     if (input$analysisType == "eQTL") {
-      req(input$gene, input$FDR)
-      eqtl_data() %>%
-        filter(gene == input$gene & FDR <= input$FDR)
+      
+      if (input$eqtlType == "cis"){
+        req(eqtl_data(), input$FDR, input$gene)
+      } else {
+        
+        req(eqtl_data(), input$pvalue, input$gene)
+      }
+      
+      message("Filtering data for gene = ", input$gene)
+      if (input$eqtlType == "trans") {
+        
+        eqtl_data() %>% filter(gene == input$gene & pvalue <= input$pvalue)
+        
+      } else {
+        
+        eqtl_data() %>% filter(gene == input$gene & FDR <= input$FDR)
+        
+      }
+      
     } else {
       req(input$p_adjusted, input$base_mean, input$log2fc)
       deseq2_data() %>% filter(padj <= as.numeric(input$p_adjusted) & baseMean >= input$base_mean & abs(log2FoldChange) >= input$log2fc)
@@ -116,8 +217,10 @@ server <- function(input, output, session) {
   # Summary table
   output$summaryTable <- renderDT({
     req(filtered_data())
+    message("Showing ", dim(filtered_data())[1], " entries for the filtered data....")
     datatable(filtered_data())
   })
+  
   
   # Volcano Plot
   output$volcanoPlot <- renderPlot({
@@ -141,7 +244,7 @@ server <- function(input, output, session) {
              x = expression("log"[2]*"FC"), y = expression("-log"[10]*"p-value")) +
         scale_x_continuous(breaks = seq(-2, 2, 0.5)) + 
         ggtitle(paste0('Volcano Plot for ', input$ethnicity, ' ethnicity')) +
-        geom_text_repel(max.overlaps = 20, size = 5, box.padding = 0.5, max.time = 3) +  # Improve readability +
+        geom_text_repel(max.overlaps = 20, size = 5, box.padding = 0.5, max.time = 3) + 
         theme_minimal(base_size = 14)
       
     } else {
@@ -158,11 +261,11 @@ server <- function(input, output, session) {
              x = expression("log"[2]*"FC"), y = expression("-log"[10]*"p-value")) +
         scale_x_continuous(breaks = seq(-2, 2, 0.5)) + 
         ggtitle(paste0('Volcano Plot for ', input$ethnicity, ' ethnicity')) +
-        geom_text_repel(max.overlaps = 20, size = 5, box.padding = 0.5, max.time = 3) +  # Improve readability +
+        geom_text_repel(max.overlaps = 20, size = 5, box.padding = 0.5, max.time = 3) + 
         theme_minimal(base_size = 14)
       
     }
-
+    
   }, height = 800, width = 800)
   
   
@@ -173,12 +276,20 @@ server <- function(input, output, session) {
     if (input$analysisType == "eQTL") {
       
       # Manhattan plot for eQTL
+      if (input$eqtlType == "trans"){
+      filtered_data2 <- filtered_data() %>% rename(FDR = pvalue)
+      } else {
+        
+        filtered_data2 <- filtered_data()
+      }
+      
       manhattan_df <- data.frame(
-        SNP = filtered_data()$snp,
-        Chromosome = filtered_data()$CHR,
-        Position = filtered_data()$POS,
-        P = filtered_data()$FDR
+        SNP = filtered_data2$snp,
+        Chromosome = filtered_data2$CHR,
+        Position = filtered_data2$POS,
+        P = filtered_data2$FDR
       )
+      
       
       if (nrow(manhattan_df) <= 2) {
         output$manhattanPlotMessage <- renderText("The Manhattan plot can't be generated for less than two SNPs.")
@@ -199,9 +310,10 @@ server <- function(input, output, session) {
         
       }
       
+      manhattan_df <- manhattan_df %>% arrange(Chromosome, Position)
+      
       unique_chr_list <- unique(manhattan_df$Chromosome)
-      chr_num <- unlist(sapply(unique_chr_list, function(x) strsplit(x, "chr")[[1]][2]))
-      message("Setting ", chr_num, " as x-axis labels....")
+      # message("Setting ", unique_chr_list, " as x-axis labels....")
       CMplot(manhattan_df,
              type="p",
              plot.type="m",
@@ -215,9 +327,9 @@ server <- function(input, output, session) {
              highlight.text=snp_annot, 
              highlight.text.cex=1.4,
              highlight.col = "red", 
-             chr.labels = unname(chr_num),
+             chr.labels = unique_chr_list,
              chr.den.col = NULL
-             )
+      )
     }
   })
   
