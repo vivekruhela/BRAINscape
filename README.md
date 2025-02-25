@@ -41,6 +41,8 @@ Select eQTL Type: cis or trans
 Adjust Nominal P-value Threshold
 ```
 
+Note: Due to large data size, the trans-eQTL data will take some time (around 10-15 secs) to load and reflect in the Shiny GUI.
+
 ### 2. Load and Explore Differential Expression Analysis Results
 
 ```r
