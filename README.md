@@ -1,5 +1,7 @@
 # BRAINscape: A Comprehensive Multi-Omics Analysis Tool
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14925129.svg)](https://doi.org/10.5281/zenodo.14925129)
+
 ## Overview
 
 **BRAINscape** is an R package designed for integrative multi-omics analysis, specifically developed for the **MU-BRAIN dataset**, a multiethnic RNAseq dataset. The package facilitates stratified **eQTL mapping** and **Differential Expression Analysis**, providing a user-friendly framework for researchers to explore genetic and transcriptomic associations.
