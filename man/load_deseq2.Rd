@@ -4,7 +4,7 @@
 \alias{load_deseq2}
 \title{Load DESeq2 data}
 \usage{
-load_deseq2(path, ethnicity)
+load_deseq2(path, ethnicity, model, braak)
 }
 \description{
 Load DESeq2 data

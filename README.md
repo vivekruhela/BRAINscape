@@ -16,18 +16,18 @@
 
 ## Installation
 
-1. Install the dependencies: shiny, ggplot2, CMplot, dplyr using `install.packages(c("shiny", "ggplot2", "CMplot", "dplyr", "DT"))`
+1. Install the dependencies: shiny, ggplot2, CMplot, dplyr using `install.packages(c("shiny", "ggplot2", "CMplot", "dplyr", "DT", "plotly", "ggrepel"))`
 2. To install BRAINscape, first download the source file from [zenodo](https://zenodo.org/records/14925129) and then install it using the following command:
 
 ```r
-install.packages("BRAINscape_0.4.0.tar.gz", repo=NULL, type="source")
+install.packages("BRAINscape_1.0.0.tar.gz", repo=NULL, type="source")
 ```
 
 ## Usage
 
 ```r
 library(BRAINscape)
-launchApp()
+BRAINscape::launchApp()
 ```
 
 ## Example Workflow
@@ -61,7 +61,7 @@ If you use BRAINscape for your research, please cite:
 
 Yang, Z., Cieza, B., Reyes-Dumeyer, D., Lee, A., Ma, Y., Yilmaz, E., Lantigua, R., Miller, G.W., Brown, L.M., Honig, L. and Ciener, B., 2024. MU-BRAIN: MUltiethnic Brain Rna-seq for Alzheimer INitiative. bioRxiv, pp.2024-02.
 
-Ruhela, V., Basilio Cieza Huaman, Zikun Yang, & Giuseppe Tosto. (2025). BRAINscape (0.3.1). Genetics and Genomics (Zenodo). [https://zenodo.org/records/14925129](https://zenodo.org/records/14925129)
+Ruhela, V., Basilio Cieza Huaman, Zikun Yang, & Giuseppe Tosto. (2025). BRAINscape (1.0.0). Genetics and Genomics (Zenodo). https://doi.org/10.5281/zenodo.17831756
 
 ## Contributing
 

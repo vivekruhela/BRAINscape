@@ -1,6 +1,6 @@
 #' Launch the BRAINscape Shiny App
 #'
-#' This function launches the Shiny app for visualizing eQTL and DESeq2 results.
+#' This function launches the Shiny app for visualizing eQTL, DESeq2, and GWAS results.
 #' @export
 launchApp <- function() {
   app_dir <- system.file("shinyApp", package = "BRAINscape")

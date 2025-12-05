@@ -7,6 +7,7 @@ suppressPackageStartupMessages({
   library(CMplot)
   library(DT)
   library(ggrepel)
+  library(plotly)
   
 })
 
@@ -20,9 +21,8 @@ ui <- fluidPage(
   titlePanel("Analysis Viewer"),
   sidebarLayout(
     sidebarPanel(
-      uiOutput("ethnicity_ui"),
       selectInput("analysisType", "Select Analysis Type:", 
-                  choices = c("eQTL", "Differential Expression Analysis")),
+                  choices = c("eQTL", "Differential Expression Analysis", "GWAS")),
       uiOutput("ethnicity_ui"),
       
       # Conditional UI for eQTL analysis
@@ -36,10 +36,19 @@ ui <- fluidPage(
       # Conditional UI for DESeq2 analysis
       conditionalPanel(
         condition = "input.analysisType == 'Differential Expression Analysis'",
+        radioButtons("BRAAK", "Select BRAAK Type:", choices = c("Binary", "Continuous")),
+        radioButtons("Model", "Select Model:", choices = c("Model1", "Model2", "Model3", "Model4")),
         selectInput("p_adjusted", label = "Adjusted P-Value Threshold:", 
                     choices = c("0.00001" = 0.00001,"0.0001" = 0.0001,"0.001" = 0.001, "0.01" = 0.01, "0.05" = 0.05, "1.0" = 1.0)),
         numericInput("base_mean", label = "Minimal base mean:", value = 0),
         numericInput("log2fc", label = "Minimal abs(log2 fold change):", value = 0)
+      ),
+      
+      # Conditional UI for GWAS analysis
+      conditionalPanel(
+        condition = "input.analysisType == 'GWAS'",
+        selectInput("P", label = "P-Value Threshold:", 
+                    choices = c("0.00001" = 0.00001,"0.0001" = 0.0001,"0.001" = 0.001, "0.01" = 0.01, "0.05" = 0.05, "1.0" = 1.0))
       )
     ),
     mainPanel(
@@ -47,7 +56,8 @@ ui <- fluidPage(
       tabsetPanel(
         tabPanel("Summary Table", DTOutput("summaryTable")),
         tabPanel("Manhattan Plot", plotOutput("manhattanPlot")),
-        tabPanel("Volcano Plot", plotOutput("volcanoPlot"))
+        tabPanel("Volcano Plot", plotlyOutput("volcanoPlot"))
+        
       )
     )
   )
@@ -56,25 +66,22 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   # Dynamically render the ethnicity selection based on analysis type
   output$ethnicity_ui <- renderUI({
-    if (input$analysisType == "eQTL") {
+    if (input$analysisType == "eQTL" || input$analysisType == "GWAS") {
       selectInput("ethnicity", "Select Ethnicity:", choices = c("Hispanics", "Non-Hispanic Whites (NHW)"))
     } else if (input$analysisType == "Differential Expression Analysis") {
-      selectInput("ethnicity", "Select Ethnicity:", choices = c("MU-BRAIN", "Hispanics", "Non-Hispanic Whites (NHW)"))
+      selectInput("ethnicity", "Select Ethnicity:", choices = c("Hispanics", "Non-Hispanic Whites (NHW)", "MUBRAIN"))
     }
   })
   
   # Render UI elements dynamically based on selection
   output$eqtlFilters <- renderUI({
     req(input$ethnicity, input$analysisType)
-    
     tagList(
-
       if (input$eqtlType == "trans") {
-        sliderInput("pvalue", "P-Value Threshold:", min = 0, max = 1, value = 0.05, step = 0.01)
+        selectInput("pval", label = "P-Value Threshold:", choices = c("0.00001" = 0.00001,"0.0001" = 0.0001,"0.001" = 0.001, "0.01" = 0.01, "0.05" = 0.05, "1.0" = 1.0))
       } else if (input$eqtlType == "cis") {
-        sliderInput("FDR", "Adjusted P-Value Threshold:", min = 0, max = 1, value = 0.05, step = 0.01)
-      },
-      actionButton("filterBtn", "Apply Filter")
+        selectInput("qval", label = "Adjusted P-Value Threshold:", choices = c("0.0001" = 0.0001,"0.001" = 0.001, "0.01" = 0.01, "0.05" = 0.05, "1.0" = 1.0))
+      }
     )
   })
   
@@ -90,37 +97,44 @@ server <- function(input, output, session) {
     if (is.null(input$ethnicity) || is.null(input$eqtlType)) {
       stop("Error: Ethnicity or eQTL Type is NULL in eqtl_data() reactive function")
     }
-    
     if (input$eqtlType == "cis"){
       
       withProgress(message = "Loading cis-eQTL data...", value = 0, {
         data <- load_eqtl(package_extdata_path, input$ethnicity, input$eqtlType)
       })
-      
     } else {
       
       withProgress(message = "Loading trans-eQTL data...", value = 0, {
         data <- load_eqtl(package_extdata_path, input$ethnicity, input$eqtlType)
       })
-      
     }
-    
-    
-    # data <- load_eqtl(package_extdata_path, input$ethnicity, input$eqtlType)
-    
     if (is.null(data) || nrow(data) == 0) {
       return(NULL)
     }
-
   })
-  
   
   deseq2_data <- reactive({
     req(input$analysisType == "Differential Expression Analysis")
     withProgress(message = "Loading DESeq2 data...", value = 0, {
-      load_deseq2(package_extdata_path, input$ethnicity)
+      load_deseq2(
+        path = package_extdata_path,
+        ethnicity = input$ethnicity,
+        model = input$Model,
+        braak = input$BRAAK
+      )
     })
   })
+  
+  gwas_data <- reactive({
+    req(input$analysisType == "GWAS")
+    withProgress(message = "Loading GWAS data...", value = 0, {
+      load_gwas(
+        path = package_extdata_path,
+        ethnicity = input$ethnicity
+      )
+    })
+  })
+  
   
   # Observing and updating gene dropdown for eQTL analysis
   eqtl_data <- reactive({
@@ -148,12 +162,11 @@ server <- function(input, output, session) {
     if (input$analysisType == "eQTL") {
       
       if (input$eqtlType == "cis"){
-        req(eqtl_data(), input$eqtlType, input$ethnicity, input$FDR)
+        req(eqtl_data(), input$eqtlType, input$ethnicity, input$qval)
       } else {
         
-        req(eqtl_data(), input$eqtlType, input$ethnicity, input$pvalue)
+        req(eqtl_data(), input$eqtlType, input$ethnicity, input$pval)
       }
-      
       
       data <- eqtl_data()
       
@@ -170,16 +183,15 @@ server <- function(input, output, session) {
       
       filtered_genes <- tryCatch({
         if (input$eqtlType == "trans") {
-          data %>% filter(pvalue < input$pvalue) %>% pull(gene) %>% unique()
+          data %>% filter(pval < as.numeric(input$pval)) %>% pull(phenotype_id) %>% unique()
         } else {
-          data %>% filter(FDR < input$FDR) %>% pull(gene) %>% unique()
+          data %>% filter(qval < as.numeric(input$qval)) %>% pull(phenotype_id) %>% unique()
         }
       }, error = function(e) {
         NULL
       })
       
       message("Total = ", length(filtered_genes), " are added in the drop-down list.")
-      
       updateSelectizeInput(session, "gene", choices = filtered_genes, server = TRUE)
     } else {
       updateSelectizeInput(session, "gene", choices = NULL, server = TRUE)
@@ -189,30 +201,29 @@ server <- function(input, output, session) {
   # Filtering data based on analysis type
   filtered_data <- reactive({
     if (input$analysisType == "eQTL") {
-      
-      if (input$eqtlType == "cis"){
-        req(eqtl_data(), input$FDR, input$gene)
+      if (input$eqtlType == "cis") {
+        req(eqtl_data(), input$qval, input$gene)
+        eqtl_data() %>% 
+          filter(phenotype_id == input$gene & qval <= as.numeric(input$qval))
       } else {
-        
-        req(eqtl_data(), input$pvalue, input$gene)
+        req(eqtl_data(), input$pval, input$gene)
+        eqtl_data() %>% 
+          filter(phenotype_id == input$gene & pval <= as.numeric(input$pval))
       }
-      
-      message("Filtering data for gene = ", input$gene)
-      if (input$eqtlType == "trans") {
-        
-        eqtl_data() %>% filter(gene == input$gene & pvalue <= input$pvalue)
-        
-      } else {
-        
-        eqtl_data() %>% filter(gene == input$gene & FDR <= input$FDR)
-        
-      }
-      
     } else {
-      req(input$p_adjusted, input$base_mean, input$log2fc)
-      deseq2_data() %>% filter(padj <= as.numeric(input$p_adjusted) & baseMean >= input$base_mean & abs(log2FoldChange) >= input$log2fc)
+      if (input$analysisType == "Differential Expression Analysis"){
+        req(input$p_adjusted, input$base_mean, input$log2fc)
+        deseq2_data() %>% 
+          filter(padj <= as.numeric(input$p_adjusted) & 
+                   baseMean >= input$base_mean & 
+                   abs(log2FoldChange) >= input$log2fc)
+      } else {
+        req(input$P)
+        gwas_data() %>% filter(P <= as.numeric(input$P)) %>% arrange(P)
+      }
     }
   })
+  
   
   # Summary table
   output$summaryTable <- renderDT({
@@ -223,113 +234,211 @@ server <- function(input, output, session) {
   
   
   # Volcano Plot
-  output$volcanoPlot <- renderPlot({
+  
+  output$volcanoPlot <- renderPlotly({
     req(input$analysisType == "Differential Expression Analysis", filtered_data())
     res <- filtered_data()
-    res$diffexpressed <- ifelse(res$log2FoldChange > 0, "UP", "DOWN")
-    colnames(res)[1] <- "gene_symbol"
-    res$delabel <- ifelse(res$gene_symbol %in% head(res[order(res$padj), "gene_symbol"], 30), res$gene_symbol, NA)
     
-    if  (input$ethnicity == "MU-BRAIN"){
-      
-      ggplot(data = res, aes(x = log2FoldChange, y = -log10(pvalue), col = diffexpressed, label = delabel)) +
-        geom_vline(xintercept = c(-0.6, 0.6), col = "gray", linetype = 'dashed') +
-        geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
-        geom_point(size = 2) +
-        # Updated colors for UP, DOWN, and NO genes
-        scale_color_manual(values = c("DOWN" = "#00AFBB", "UP" = "#bb0c00"), 
-                           labels = c("Downregulated",  "Upregulated")) + 
-        coord_cartesian(ylim = c(0, 25), xlim = c(-2, 2)) + 
-        labs(color = 'Expression Status', # Updated legend title
-             x = expression("log"[2]*"FC"), y = expression("-log"[10]*"p-value")) +
-        scale_x_continuous(breaks = seq(-2, 2, 0.5)) + 
-        ggtitle(paste0('Volcano Plot for ', input$ethnicity, ' ethnicity')) +
-        geom_text_repel(max.overlaps = 20, size = 5, box.padding = 0.5, max.time = 3) + 
-        theme_minimal(base_size = 14)
-      
-    } else {
-      
-      ggplot(data = res, aes(x = log2FoldChange, y = -log10(pvalue), col = diffexpressed, label = delabel)) +
-        geom_vline(xintercept = c(-0.6, 0.6), col = "gray", linetype = 'dashed') +
-        geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
-        geom_point(size = 2) +
-        # Updated colors for UP, DOWN, and NO genes
-        scale_color_manual(values = c("DOWN" = "#00AFBB", "UP" = "#bb0c00"), 
-                           labels = c("Downregulated",  "Upregulated")) + 
-        coord_cartesian(ylim = c(0, 15), xlim = c(-2, 2)) + 
-        labs(color = 'Expression Status', # Updated legend title
-             x = expression("log"[2]*"FC"), y = expression("-log"[10]*"p-value")) +
-        scale_x_continuous(breaks = seq(-2, 2, 0.5)) + 
-        ggtitle(paste0('Volcano Plot for ', input$ethnicity, ' ethnicity')) +
-        geom_text_repel(max.overlaps = 20, size = 5, box.padding = 0.5, max.time = 3) + 
-        theme_minimal(base_size = 14)
-      
-    }
+    # Thresholds
+    lfc_thresh <- 0.15
+    pval_thresh <- 0.05
     
-  }, height = 800, width = 800)
+    # Categorize points
+    res$category <- "NS"
+    res$category[res$padj < pval_thresh & abs(res$log2FoldChange) >= lfc_thresh & res$log2FoldChange > 0] <- "Up"
+    res$category[res$padj < pval_thresh & abs(res$log2FoldChange) >= lfc_thresh & res$log2FoldChange < 0] <- "Down"
+    res$category[res$padj < pval_thresh & abs(res$log2FoldChange) < lfc_thresh] <- "Significant"
+    
+    # Dynamic Y-axis based on data
+    maxY <- -log10(min(res$padj, na.rm = TRUE)) + 1
+    
+    # Build ggplot
+    p <- ggplot(data = res, aes(
+      x = log2FoldChange,
+      y = -log10(padj),
+      col = category,
+      text = paste0(
+        "Gene: ", symbol, "<br>",
+        "log2FC: ", round(log2FoldChange, 3), "<br>",
+        "-log10(padj): ", round(-log10(padj), 3), "<br>",
+        "padj: ", signif(padj, 3)
+      )
+    )) +
+      geom_point(size = 2) +
+      geom_vline(xintercept = c(-lfc_thresh, lfc_thresh), col = "black", linetype = 'dashed') +
+      geom_hline(yintercept = -log10(pval_thresh), col = "black", linetype = 'dashed') +
+      scale_color_manual(
+        values = c(
+          "Up" = "#0072B2",
+          "Down" = "#D55E00",
+          "Significant" = "#009E73",
+          "NS" = "#BEBEBE"
+        )
+      ) +
+      coord_cartesian(ylim = c(0, maxY), xlim = c(-2, 2)) +
+      labs(
+        x = "log2 Fold Change",
+        y = "-log10(adjusted p-value)",
+        color = "Category"
+      ) +
+      scale_x_continuous(breaks = seq(-2, 2, 0.5)) +
+      ggtitle(paste0('Volcano Plot for ', input$ethnicity, ' ethnicity')) +
+      theme_minimal(base_size = 14) +
+      theme(
+        legend.position = "bottom",
+        text = element_text(size = 14)
+      )
+    
+    # Convert to interactive plot with fixed size
+    ggplotly(p, tooltip = "text") %>%
+      layout(
+        width = 900,
+        height = 900,
+        title = list(text = paste0('Differential Expression – ', input$ethnicity, ' | ', input$Model, ' | ', input$BRAAK, ' BRAAK')),
+        xaxis = list(title = "log2 Fold Change"),
+        yaxis = list(title = "-log10(p-adjusted value)")
+      )
+  })
   
   
   # Manhattan Plot
   output$manhattanPlot <- renderPlot({
     req(filtered_data())
-    
     if (input$analysisType == "eQTL") {
-      
-      # Manhattan plot for eQTL
-      if (input$eqtlType == "trans"){
-      filtered_data2 <- filtered_data() %>% rename(FDR = pvalue)
+      filtered_data2 <- if (input$eqtlType == "trans") {
+        filtered_data() %>% rename(FDR = pval)
       } else {
-        
-        filtered_data2 <- filtered_data()
+        filtered_data2 <- filtered_data() %>% rename(FDR = qval)
       }
       
+      # Build dataframe
       manhattan_df <- data.frame(
-        SNP = filtered_data2$snp,
-        Chromosome = filtered_data2$CHR,
-        Position = filtered_data2$POS,
+        SNP = filtered_data2$variant_id,
+        Chromosome = as.factor(filtered_data2$chr),
+        Position = filtered_data2$pos,
         P = filtered_data2$FDR
       )
       
-      
       if (nrow(manhattan_df) <= 2) {
-        output$manhattanPlotMessage <- renderText("The Manhattan plot can't be generated for less than two SNPs.")
-        plot(1, type = "n", xlab = "", ylab = "", main = "The Manhattan plot can't be generated for less than two SNPs.")
+        plot.new()
+        title("Not enough SNPs to plot.")
         return()
       }
       
-      output$manhattanPlotMessage <- renderText("")  # Clear any previous message
+      # Compute -log10(p)
+      manhattan_df$logP <- -log10(as.numeric(manhattan_df$P))
+      manhattan_df <- manhattan_df %>% arrange(as.numeric(Chromosome), Position)
+      chrom_sizes <- manhattan_df %>% 
+        group_by(Chromosome) %>%
+        summarise(chr_len = max(Position), .groups = "drop")
       
-      manhattan_df <- manhattan_df %>% arrange(P)
-      if (dim(manhattan_df)[1] > 5){
-        
-        snp_annot <- manhattan_df$SNP[1:5]
-        
-      } else {
-        
-        snp_annot <- manhattan_df$SNP
-        
-      }
+      chrom_sizes$cum_len <- cumsum(chrom_sizes$chr_len) - chrom_sizes$chr_len
+      manhattan_df <- manhattan_df %>%
+        left_join(chrom_sizes %>% select(Chromosome, cum_len), by = "Chromosome") %>%
+        mutate(Pos_cum = Position + cum_len)
       
-      manhattan_df <- manhattan_df %>% arrange(Chromosome, Position)
+      # Axis ticks (midpoints per chromosome)
+      axis_df <- manhattan_df %>%
+        group_by(Chromosome) %>%
+        summarise(center = mean(range(Pos_cum)), .groups = "drop")
       
-      unique_chr_list <- unique(manhattan_df$Chromosome)
-      # message("Setting ", unique_chr_list, " as x-axis labels....")
-      CMplot(manhattan_df,
-             type="p",
-             plot.type="m",
-             col = c("blue", "red"),
-             LOG10=TRUE,
-             file = NULL,
-             cex = 0.6, main = paste0("Manhattan Plot of ", input$eqtlType, "-eQTL Analysis for ", input$gene, " Gene in ", input$ethnicity, " Cohort"),
-             file.output=F,verbose=F,
-             width=14,height=6,chr.labels.angle=45,
-             highlight=snp_annot, 
-             highlight.text=snp_annot, 
-             highlight.text.cex=1.4,
-             highlight.col = "red", 
-             chr.labels = unique_chr_list,
-             chr.den.col = NULL
+      # Select top SNPs for annotation
+      top_snps <- manhattan_df %>% arrange(P) %>% slice_head(n = 5)
+      
+      ggplot(manhattan_df, aes(x = Pos_cum, y = logP, color = as.factor(as.numeric(Chromosome) %% 2))) +
+        geom_point(alpha = 0.8, size = 1.5) +
+        scale_color_manual(values = c("#2111a1", "#a11111"), guide = "none") +
+        geom_point(data = top_snps, aes(x = Pos_cum, y = logP), color = "red", size = 3) +
+        ggrepel::geom_text_repel(
+          data = top_snps,
+          aes(x = Pos_cum, y = logP, label = SNP),
+          size = 4,
+          nudge_y = 0.5,
+          segment.color = "black"
+        ) +
+        scale_x_continuous(
+          label = axis_df$Chromosome,
+          breaks = axis_df$center
+        ) +
+        labs(
+          title = paste0("Manhattan Plot: ", input$phenotype_id, " in ", input$ethnicity),
+          x = "Chromosome",
+          y = "-log10(p)"
+        ) +
+        theme_minimal(base_size = 16) +
+        theme(
+          panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank(),
+          plot.title = element_text(hjust = 0.5, face = "bold")
+        )
+      
+    } else {
+      message("Generating GWAS Manhattan Plot for ", dim(filtered_data())[1], " SNPs.")
+      
+      pval_thresh <- 5E-08
+      
+      # Build dataframe
+      manhattan_df <- data.frame(
+        SNP = filtered_data()$ID,
+        Chromosome = filtered_data()$CHROM,
+        Position = filtered_data()$POS,
+        P = filtered_data()$P
       )
+      
+      # Compute -log10(p)
+      manhattan_df$P[manhattan_df$P == 0] <- 1e-300
+      manhattan_df$logP <- -log10(as.numeric(manhattan_df$P))
+      
+      # Select top SNPs for annotation
+      top_snps <- manhattan_df %>% arrange(P) %>% slice_head(n = 5)
+      
+      manhattan_df <- manhattan_df %>% arrange(as.numeric(Chromosome), Position)
+      chrom_sizes <- manhattan_df %>% 
+        group_by(Chromosome) %>%
+        summarise(chr_len = max(Position), .groups = "drop")
+      
+      # chrom_sizes$cum_len <- cumsum(chrom_sizes$chr_len) - chrom_sizes$chr_len
+      chrom_sizes$cum_len <- cumsum(as.numeric(chrom_sizes$chr_len)) - as.numeric(chrom_sizes$chr_len)
+      
+      manhattan_df <- manhattan_df %>%
+        left_join(chrom_sizes %>% select(Chromosome, cum_len), by = "Chromosome") %>%
+        mutate(Pos_cum = Position + cum_len)
+      
+      # Axis ticks (midpoints per chromosome)
+      axis_df <- manhattan_df %>%
+        group_by(Chromosome) %>%
+        summarise(center = mean(range(Pos_cum)), .groups = "drop")
+      
+      # Select top SNPs for annotation
+      top_snps <- manhattan_df %>% arrange(P) %>% slice_head(n = 5)
+      
+      ggplot(manhattan_df, aes(x = Pos_cum, y = logP, color = as.factor(as.numeric(Chromosome) %% 2))) +
+        geom_point(alpha = 0.8, size = 1.5) +
+        scale_color_manual(values = c("#2111a1", "#a11111"), guide = "none") +
+        geom_point(data = top_snps, aes(x = Pos_cum, y = logP), color = "red", size = 3) +
+        ggrepel::geom_text_repel(
+          data = top_snps,
+          aes(x = Pos_cum, y = logP, label = SNP),
+          size = 4,
+          nudge_y = 0.5,
+          segment.color = "black"
+        ) +
+        geom_hline(yintercept = -log10(pval_thresh), col = "#0c7326", linetype = 'dashed') +
+        scale_x_continuous(
+          label = axis_df$Chromosome,
+          breaks = axis_df$center
+        ) +
+        labs(
+          title = paste0("Manhattan Plot: ", input$ethnicity, " (p-value < ", input$P, ")"),
+          x = "Chromosome",
+          y = "-log10(p)"
+        ) +
+        theme_minimal(base_size = 16) +
+        theme(
+          panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank(),
+          plot.title = element_text(hjust = 0.5, face = "bold")
+        )
     }
   })
   

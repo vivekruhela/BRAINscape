@@ -9,12 +9,14 @@ load_eqtl(path, ethnicity, type)
 \arguments{
 \item{path}{The base path to data files}
 
-\item{ethnicity}{"Hispanics" or "NonHispanics"}
+\item{ethnicity}{"Hispanics" or "NonHispanics" or "MUBRAIN"}
 
-\item{type}{"cis" or "trans"}
+\item{type}{"cis" or "trans" or "Model"}
 }
 \value{
-The loaded eQTL data
+The loaded data
+
+A data frame containing GWAS results.
 }
 \description{
 Load eQTL data

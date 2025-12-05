@@ -3,3 +3,4 @@
 export(launchApp)
 export(load_deseq2)
 export(load_eqtl)
+export(load_gwas)
