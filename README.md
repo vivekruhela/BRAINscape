@@ -39,7 +39,19 @@ Select Ethinicity : Hispanics or Non-Hispanic Whites (NHW)
 Select Analysis Type: eQTL
 Select eQTL Type: cis or trans
 Adjust Nominal P-value Threshold
+
+# Example: Parameter selection and visualization for eQTL analysis
+analysis_type <- "eQTL"
+ethnicities <- "Non-Hispanic Whites (NHW)"
+eqtl_type <- "trans"
+gene <- "COLGALT2"
+p_threshold <- 0.05
+
+# Results will display Manhattan plots and interactive tables
 ```
+
+![eQTL BRAINscape](images/eqtl_brainscape.png)
+
 
 Note: Due to large data size, the trans-eQTL data will take some time (around 10-15 secs) to load and reflect in the Shiny GUI.
 
@@ -49,7 +61,34 @@ Note: Due to large data size, the trans-eQTL data will take some time (around 10
 Select Ethinicity : Hispanics or Non-Hispanic Whites (NHW) or MU-BRAIN
 Select Analysis Type: Differential Gene Expression
 Adjust Cutoff for p-value (adjusted), BaseMean, and Log2FoldChange
+
+# Example: Parameter selection and visualization for eQTL analysis
+analysis_type <- "Differential Expression Analysis"
+ethnicities <- "MUBRAIN"
+adjusted_p_threshold <- 0.05
+
+# Results will display volcano plot and interactive tables
 ```
+
+![DESeq2 BRAINscape](images/deseq2_brainscape.png)
+
+### 3. Load and Explore GWAS Analysis Results
+
+```r
+Select Ethinicity : Hispanics or Non-Hispanic Whites (NHW)
+Select Analysis Type: GWAS
+Adjust Nominal P-value Threshold
+
+# Example: Parameter selection and visualization for eQTL analysis
+analysis_type <- "GWAS"
+ethnicities <- "Non-Hispanic Whites (NHW)"
+p_threshold <- 0.05
+
+# Results will display volcano plot and interactive tables
+```
+
+![GWAS BRAINscape](images/nhw_gwas_brainscape.png)
+
 
 ## Data Sources
 
